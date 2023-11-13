@@ -16,8 +16,8 @@ import java.util.regex.Pattern;
 public class WebCrawler {
     private final ExecutorService executorService;
     private final AtomicInteger activeTaskCount = new AtomicInteger(0);
-    private final Set<String> visitedUrls = new CopyOnWriteArraySet<>();
-    private final Set<String> imageUrls = new CopyOnWriteArraySet<>();
+    private final Set<String> visitedUrls = ConcurrentHashMap.newKeySet();;
+    private final Set<String> imageUrls = ConcurrentHashMap.newKeySet();;
     private String domain;
     private final long crawlDelay;
     private final int timeout;
@@ -79,16 +79,21 @@ public class WebCrawler {
     }
 
     private void addImageUrls(Document doc, String url) {
+        // Add all image URLs found in img tags
         Elements images = doc.select("img[src]");
         images.stream()
                 .map(img -> normalizeUrl(img.absUrl("src")))
                 .forEach(imageUrls::add);
 
-        Elements divImgTags = doc.select("div[role=img]");
-        divImgTags.stream()
+        // Add all elements with classname containing 'image'
+        Elements imageElements = doc.select("[class*=image]");
+        // Add all elements with role 'img'
+        imageElements.addAll(doc.select("div[role=img]"));
+        imageElements.stream()
                 .map(div -> normalizeUrl(extractImageUrlFromDiv(div)))
                 .filter(imgUrl -> !imgUrl.isEmpty())
                 .forEach(imageUrls::add);
+
     }
 
     private String extractImageUrlFromDiv(Element div) {

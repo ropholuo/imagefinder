@@ -43,6 +43,8 @@ public class ImageFinder extends HttpServlet {
 		try {
 			webCrawler.setDomain(url);
 			Set<String> imageUrls = webCrawler.crawl(url);
+			System.out.println("Found " + imageUrls.size() + " images");
+			imageUrls.forEach(System.out::println);
 			resp.getWriter().print(GSON.toJson(imageUrls));
 		} catch (Exception e) {
 			e.printStackTrace();
