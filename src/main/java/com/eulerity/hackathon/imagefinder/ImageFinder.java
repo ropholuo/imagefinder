@@ -2,7 +2,6 @@ package com.eulerity.hackathon.imagefinder;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,8 +13,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
-import static com.eulerity.hackathon.imagefinder.utils.*;
 
 @WebServlet(name = "ImageFinder", urlPatterns = { "/main" })
 public class ImageFinder extends HttpServlet {
@@ -47,10 +44,6 @@ public class ImageFinder extends HttpServlet {
 		try {
 			webCrawler.setDomain(url);
 			Map<String, Set<String>> urls = webCrawler.crawl(url);
-			// Set<String> imageUrls = urls.get(IMAGE_KEY);
-			// Set<String> logoUrls = urls.get(LOGO_KEY);
-			// System.out.println("Found " + logoUrls.size() + " logos");
-			// System.out.println("Found " + imageUrls.size() + " images");
 			resp.getWriter().print(GSON.toJson(urls));
 		} catch (Exception e) {
 			e.printStackTrace();

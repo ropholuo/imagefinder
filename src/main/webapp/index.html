@@ -1,82 +1,112 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eulerity Image Finder</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+            text-align: center;
+        }
+        .container {
+            max-width: 85%;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: rgb(103, 87, 245);
+        }
+        .input {
+            text-align: center;
+            margin-bottom: 20px;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+        }
+        .input input[type="text"] {
+            width: 35%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+            display: inline-block;
+			margin-right: 10px; /* Space between input and button */
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #8a8a8a;
+			vertical-align: middle;
+            -webkit-animation: spin 2s linear infinite; /* Safari */
+            animation: spin 2s linear infinite;
+        }
+        button {
+            background-color: rgb(98, 160, 226);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+			flex-shrink: 0;
+        }
+        button:hover {
+            background-color: rgb(14, 114, 221);
+        }
+		/* Safari */
+        @-webkit-keyframes spin {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+		.images, .logos {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Adjust min-width for grid items */
+			gap: 10px;
+			justify-content: center;
+			align-items: center;
+		}
+		.images img, .logos img {
+			width: 100%;   
+			height: auto;  
+			max-width: 150px; 
+			border-radius: 4px;
+			box-shadow: 0 0 5px rgba(0,0,0,0.1);
+			margin: auto; 
+		}
+    </style>
 </head>
 <body>
-	<h1>Eulerity Take-Home Challenge</h1>
-
-	<h2>How it works</h2>
-	<ul>
-		<li>Pressing the submit button on this page will make a POST
-			request to /main</li>
-		<li>That request will contain a form parameter with the url
-			populated in the input box below</li>
-		<li>The ImageFinder servlet will respond to the request with a
-			list of image urls</li>
-		<li>This page contains javascript to send the request and use the
-			response to build a list of images</li>
-	</ul>
-	<h2>Backend Developers</h2>
-	<ul>
-		<li>You can update the ImageFinder servlet to add crawling logic</li>
-		<li>Feel free to add as many classes/packages/files/third party
-			libraries as you'd like</li>
-		<li>We recommend JSoup for parsing web pages</li>
-		<li>You can update this page's html/css/style if you plan on
-			improving the interface</li>
-		<li>Your final submission does not need to contain any of the
-			files included herein</li>
-		<li>This project is just skeleton code so you can hit the ground
-			running.</li>
-		<li>Some ideas:
-			<ul>
-			<li>Crawl not only the given url, but other pages in the same domain</li>
-			<li>Make your crawler multithreaded to speed up response times</li>
-			<li>Be a friendly crawler and try not to hammer a site</li>
-			<li>Think about how to identify different classes of images and do they need special handling</li>
-			<li>Can you identify images as logos? Perhaps collect favicons?</li>
-			<li>Can you mark images that contain people?</li>
-			</ul>
-		</li>
-	</ul>
-	<h2>Important Notes</h2>
-	<p>Congratulations on making it this far into the interview
-		process!</p>
-	<p>
-	This is a free-form hackathon for a very important reason. We wish to see what ideas you can bring to the table.
-	</p>
-	<p><strong>If your submission only contains 5-10 lines of new code, please think twice about submitting it.</strong> If you need more time, you can ask for it.
-	</p>
-	<p>
-	You can use one of the ideas above, but feel free to go off and build something completely different. 
-	The important thing is to submit something that highlights your strengths as a developer.
-	</p>
-	<p>
-	  <b>Remember, this is your chance to show off how you can best contribute to our team.</b>
-	</p>
-	<p>Please remember to think about good design and code style. Comments in your code are great, but thought should also be taken in how to name your variables and method.</p>
-
-
-
-	<div class="content">
-		<div class="input">
-			<form>
-				<input type="text" name="url">
-			</form>
-			<button type="button">Submit!</button>
+    <div class="container">
+        <h1>Welcome to Eulerity Image Finder</h1>
+        <p>Discover and explore images from any website.</p>
+        <div class="input">
+            <input type="text" name="url" placeholder="Enter a URL to find images...">
+            <button type="button">Find Images</button>
+        </div>
+        <div class="output">
+			<h2 class="logos-title" style="display: none;">Logos</h2>
+			<ul class="logos"></ul>
 		</div>
 		<div class="output">
-			Possible logos
-			<ul class="logos">
-
-			</ul>
+			<h2 class="images-title" style="display: none;">Images</h2>
+			<ul class="images"></ul>
 		</div>
-		<div class="output">
-			<ul class="images">
-
-			</ul>
-		</div>
-	</div>
-	<script>
+    </div>
+    <script>
 		var imagesList = document.querySelector('ul.images');
 		var logosList = document.querySelector('ul.logos');
 		var urlInput = document.querySelector('input[name=url]')
@@ -101,18 +131,34 @@
 			logosList.innerHTML = '';
 			imagesList.innerHTML = '';
 			console.log(response);
-			for (var i = 0; i < response['logos']?.length; i++) {
-				var img = document.createElement("img");
-				img.width = 200;
-				img.src = response['logos'][i];
-				logosList.appendChild(img);
+			
+			if (response['logos'] && response['logos'].length > 0) {
+				document.querySelector('h2.logos-title').style.display = 'block';
+				response['logos'].forEach(logoUrl => {
+					var img = document.createElement("img");
+					img.width = 200;
+					img.src = logoUrl;
+					logosList.appendChild(img);
+				});
+			} else {
+				document.querySelector('h2.logos-title').style.display = 'none';
 			}
-			for (var i = 0; i < response['images']?.length; i++) {
-				var img = document.createElement("img");
-				img.width = 200;
-				img.src = response['images'][i];
-				imagesList.appendChild(img);
+
+			if (response['images'] && response['images'].length > 0) {
+				document.querySelector('h2.images-title').style.display = 'block';
+				response['images'].forEach(imageUrl => {
+					var img = document.createElement("img");
+					img.width = 200;
+					img.src = imageUrl;
+					imagesList.appendChild(img);
+				});
+			} else {
+				document.querySelector('h2.images-title').style.display = 'none';
 			}
+
+			document.querySelector('button').disabled = false;
+			document.querySelector('button').innerHTML = 'Find Images';
+			document.querySelector('button').removeChild(document.querySelector('div.loader'));
 		}
 
 		makeApiCall = function(url, method, obj, callback) {
@@ -124,9 +170,19 @@
 
 		document.querySelector('button').addEventListener("click", function(event) {
 			event.preventDefault();
+			this.innerHTML = ''; // Clear existing content
+			var loader = document.createElement('div');
+			loader.className = 'loader';
+			var buttonHeight = this.offsetHeight;
+			loader.style.width = `${buttonHeight * 0.7}px`; 
+			loader.style.height = loader.style.width; 
+			loader.style.borderWidth = `${buttonHeight * 0.1}px`; 
+
+			this.appendChild(loader);
+			this.disabled = true;
+
 			makeApiCall('/main?url=' + urlInput.value, 'POST', null, updateList);
 		});
 	</script>
 </body>
-
 </html>

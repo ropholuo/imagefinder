@@ -13,8 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.eulerity.hackathon.imagefinder.utils.*;
-
 public class WebCrawler {
     private final ExecutorService executorService;
     private final AtomicInteger activeTaskCount = new AtomicInteger(0);
@@ -24,6 +22,11 @@ public class WebCrawler {
     private String domain;
     private final long crawlDelay;
     private final int timeout;
+
+    private final int MAX_IMAGE_URLS = 300;
+
+    public static final String IMAGE_KEY = "images";
+    public static final String LOGO_KEY = "logos";
 
     public WebCrawler(int threadPoolSize, long crawlDelay, int timeout) throws Exception {
         this.executorService = Executors.newFixedThreadPool(threadPoolSize);
@@ -104,7 +107,6 @@ public class WebCrawler {
                 .map(div -> normalizeUrl(extractImageUrlFromDiv(div)))
                 .filter(imgUrl -> !imgUrl.isEmpty())
                 .forEach(imageUrls::add);
-
     }
 
     private String extractImageUrlFromDiv(Element div) {
@@ -162,6 +164,10 @@ public class WebCrawler {
     }
 
     private void submitTask(Runnable task) {
+        if (imageUrls.size() >= MAX_IMAGE_URLS) {
+            return;
+        }
+
         activeTaskCount.incrementAndGet();
         executorService.submit(() -> {
             try {
