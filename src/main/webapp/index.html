@@ -65,13 +65,20 @@
 			<button type="button">Submit!</button>
 		</div>
 		<div class="output">
-			<ul class="results">
+			Possible logos
+			<ul class="logos">
+
+			</ul>
+		</div>
+		<div class="output">
+			<ul class="images">
 
 			</ul>
 		</div>
 	</div>
 	<script>
-		var resultList = document.querySelector('ul.results');
+		var imagesList = document.querySelector('ul.images');
+		var logosList = document.querySelector('ul.logos');
 		var urlInput = document.querySelector('input[name=url]')
 
 		apiCallBack = function(xhr, callback) {
@@ -91,12 +98,20 @@
 		}
 
 		updateList = function(response) {
-			resultList.innerHTML = '';
-			for (var i = 0; i < response.length; i++) {
+			logosList.innerHTML = '';
+			imagesList.innerHTML = '';
+			console.log(response);
+			for (var i = 0; i < response['logos']?.length; i++) {
 				var img = document.createElement("img");
 				img.width = 200;
-				img.src = response[i];
-				resultList.appendChild(img);
+				img.src = response['logos'][i];
+				logosList.appendChild(img);
+			}
+			for (var i = 0; i < response['images']?.length; i++) {
+				var img = document.createElement("img");
+				img.width = 200;
+				img.src = response['images'][i];
+				imagesList.appendChild(img);
 			}
 		}
 

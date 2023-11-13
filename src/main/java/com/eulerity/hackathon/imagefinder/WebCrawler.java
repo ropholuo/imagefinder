@@ -13,11 +13,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.eulerity.hackathon.imagefinder.utils.*;
+
 public class WebCrawler {
     private final ExecutorService executorService;
     private final AtomicInteger activeTaskCount = new AtomicInteger(0);
-    private final Set<String> visitedUrls = ConcurrentHashMap.newKeySet();;
-    private final Set<String> imageUrls = ConcurrentHashMap.newKeySet();;
+    private final Set<String> visitedUrls = ConcurrentHashMap.newKeySet();
+    private final Set<String> imageUrls = ConcurrentHashMap.newKeySet();
+    private final Set<String> logoUrls = ConcurrentHashMap.newKeySet();
     private String domain;
     private final long crawlDelay;
     private final int timeout;
@@ -28,7 +31,7 @@ public class WebCrawler {
         this.timeout = timeout;
     }
 
-    public Set<String> crawl(String startUrl) {
+    public Map<String, Set<String>> crawl(String startUrl) {
         if (domain == null || domain.isEmpty()) {
             throw new IllegalStateException("Domain not set");
         }
@@ -49,8 +52,10 @@ public class WebCrawler {
         } finally {
             shutdownAndAwaitTermination(executorService);
         }
-
-        return imageUrls;
+        Map<String, Set<String>> urls = new HashMap<>();
+        urls.put(IMAGE_KEY, imageUrls);
+        urls.put(LOGO_KEY, logoUrls);
+        return urls;
     }
 
     public void setDomain(String startUrl) throws Exception {
@@ -81,9 +86,15 @@ public class WebCrawler {
     private void addImageUrls(Document doc, String url) {
         // Add all image URLs found in img tags
         Elements images = doc.select("img[src]");
-        images.stream()
-                .map(img -> normalizeUrl(img.absUrl("src")))
-                .forEach(imageUrls::add);
+        images.stream().forEach(img -> {
+            String imageUrl = normalizeUrl(img.absUrl("src"));
+            imageUrls.add(imageUrl);
+
+            // Check if image is a logo
+            if (isPotentialLogo(img)) {
+                logoUrls.add(imageUrl);
+            }
+        });
 
         // Add all elements with classname containing 'image'
         Elements imageElements = doc.select("[class*=image]");
@@ -120,6 +131,21 @@ public class WebCrawler {
             e.printStackTrace();
             return url; // Return the original URL if there's an error
         }
+    }
+
+    private boolean isPotentialLogo(Element img) {
+        // Check URL for clues
+        String imageUrl = img.absUrl("src");
+        if (imageUrl.toLowerCase().contains("logo")) {
+            return true;
+        }
+
+        // Check alt text for clues
+        String altText = img.attr("alt").toLowerCase();
+        if (altText.toLowerCase().contains("logo")) {
+            return true;
+        }
+        return false;
     }
 
     private void shutdownAndAwaitTermination(ExecutorService pool) {
