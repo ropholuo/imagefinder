@@ -26,7 +26,7 @@ public class WebCrawler {
     private final int timeout;
     private final int threadPoolSize;
 
-    private final int MAX_IMAGE_URLS = 300;
+    private final int MAX_IMAGE_URLS = 100;
 
     public static final String IMAGE_KEY = "images";
     public static final String LOGO_KEY = "logos";
@@ -66,6 +66,12 @@ public class WebCrawler {
     }
 
     public void setDomain(String startUrl) throws Exception {
+        if (startUrl == null || startUrl.isEmpty()) {
+            throw new IllegalArgumentException("Start URL cannot be null or empty");
+        }
+        if (!startUrl.startsWith("http")) {
+            startUrl = "http://" + startUrl;
+        }
         this.domain = new URL(startUrl).getHost();
     }
 
@@ -74,6 +80,10 @@ public class WebCrawler {
             try {
                 Thread.sleep(crawlDelay);
 
+                // Add protocol if missing
+                if (!url.startsWith("http")) {
+                    url = "http://" + url;
+                }
                 Document doc = Jsoup.connect(url).get();
                 addImageUrls(doc, url);
 
@@ -91,10 +101,16 @@ public class WebCrawler {
     }
 
     private void addImageUrls(Document doc, String url) {
+        if (imageUrls.size() >= MAX_IMAGE_URLS) {
+            return;
+        }
         // Add all image URLs found in img tags
         Elements images = doc.select("img[src]");
         images.stream().forEach(img -> {
             String imageUrl = normalizeUrl(img.absUrl("src"));
+            if (imageUrls.size() >= MAX_IMAGE_URLS) {
+                return;
+            }
             if (imageUrl.isEmpty() || !isValidImageUrl(imageUrl)) {
                 return;
             }
@@ -112,7 +128,8 @@ public class WebCrawler {
         imageElements.addAll(doc.select("div[role=img]"));
         imageElements.stream()
                 .map(div -> normalizeUrl(extractImageUrlFromDiv(div)))
-                .filter(imgUrl -> !imgUrl.isEmpty() && isValidImageUrl(imgUrl))
+                .filter(imgUrl -> !imgUrl.isEmpty() && isValidImageUrl(imgUrl) &&
+                        imageUrls.size() < MAX_IMAGE_URLS)
                 .forEach(imageUrls::add);
     }
 
@@ -131,14 +148,16 @@ public class WebCrawler {
 
     private String normalizeUrl(String url) {
         try {
+            if (!url.startsWith("http")) {
+                url = "http://" + url;
+            }
             URL aURL = new URL(url);
             String protocol = aURL.getProtocol();
             String host = aURL.getHost();
             String path = aURL.getPath();
             return new URL(protocol, host, path).toString();
         } catch (MalformedURLException e) {
-            e.printStackTrace();
-            return url; // Return the original URL if there's an error
+            return "";
         }
     }
 
@@ -149,8 +168,7 @@ public class WebCrawler {
             connection.connect();
             String contentType = connection.getContentType();
             return contentType.startsWith("image/");
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return false;
         }
     }
