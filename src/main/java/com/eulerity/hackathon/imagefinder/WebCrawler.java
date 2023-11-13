@@ -5,6 +5,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
@@ -14,7 +16,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class WebCrawler {
-    private final ExecutorService executorService;
+    private ExecutorService executorService;
     private final AtomicInteger activeTaskCount = new AtomicInteger(0);
     private final Set<String> visitedUrls = ConcurrentHashMap.newKeySet();
     private final Set<String> imageUrls = ConcurrentHashMap.newKeySet();
@@ -22,6 +24,7 @@ public class WebCrawler {
     private String domain;
     private final long crawlDelay;
     private final int timeout;
+    private final int threadPoolSize;
 
     private final int MAX_IMAGE_URLS = 300;
 
@@ -29,7 +32,7 @@ public class WebCrawler {
     public static final String LOGO_KEY = "logos";
 
     public WebCrawler(int threadPoolSize, long crawlDelay, int timeout) throws Exception {
-        this.executorService = Executors.newFixedThreadPool(threadPoolSize);
+        this.threadPoolSize = threadPoolSize;
         this.crawlDelay = crawlDelay;
         this.timeout = timeout;
     }
@@ -40,6 +43,7 @@ public class WebCrawler {
         }
 
         try {
+            resetService();
             submitTask(() -> processUrl(startUrl));
 
             while (activeTaskCount.get() > 0) {
@@ -53,7 +57,7 @@ public class WebCrawler {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            shutdownAndAwaitTermination(executorService);
+            shutdownAndAwaitTermination();
         }
         Map<String, Set<String>> urls = new HashMap<>();
         urls.put(IMAGE_KEY, imageUrls);
@@ -91,6 +95,9 @@ public class WebCrawler {
         Elements images = doc.select("img[src]");
         images.stream().forEach(img -> {
             String imageUrl = normalizeUrl(img.absUrl("src"));
+            if (imageUrl.isEmpty() || !isValidImageUrl(imageUrl)) {
+                return;
+            }
             imageUrls.add(imageUrl);
 
             // Check if image is a logo
@@ -105,7 +112,7 @@ public class WebCrawler {
         imageElements.addAll(doc.select("div[role=img]"));
         imageElements.stream()
                 .map(div -> normalizeUrl(extractImageUrlFromDiv(div)))
-                .filter(imgUrl -> !imgUrl.isEmpty())
+                .filter(imgUrl -> !imgUrl.isEmpty() && isValidImageUrl(imgUrl))
                 .forEach(imageUrls::add);
     }
 
@@ -135,6 +142,19 @@ public class WebCrawler {
         }
     }
 
+    private boolean isValidImageUrl(String url) {
+        try {
+            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            connection.setRequestMethod("HEAD");
+            connection.connect();
+            String contentType = connection.getContentType();
+            return contentType.startsWith("image/");
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     private boolean isPotentialLogo(Element img) {
         // Check URL for clues
         String imageUrl = img.absUrl("src");
@@ -150,15 +170,24 @@ public class WebCrawler {
         return false;
     }
 
-    private void shutdownAndAwaitTermination(ExecutorService pool) {
-        pool.shutdown(); // Disable new tasks from being submitted
+    private void resetService() {
+        visitedUrls.clear();
+        imageUrls.clear();
+        logoUrls.clear();
+
+        activeTaskCount.set(0);
+        executorService = Executors.newFixedThreadPool(threadPoolSize);
+    }
+
+    private void shutdownAndAwaitTermination() {
+        executorService.shutdown(); // Disable new tasks from being submitted
         try {
             // Wait for existing tasks to complete
-            if (!pool.awaitTermination(timeout, TimeUnit.SECONDS)) {
-                pool.shutdownNow(); // Cancel currently executing tasks
+            if (!executorService.awaitTermination(timeout, TimeUnit.SECONDS)) {
+                executorService.shutdownNow(); // Cancel currently executing tasks
             }
         } catch (InterruptedException ie) {
-            pool.shutdownNow();
+            executorService.shutdownNow();
             Thread.currentThread().interrupt();
         }
     }
